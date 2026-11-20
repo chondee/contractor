@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contractor Tool Dashboard</title>
+<style>
+  :root {
+    --bg: #f4f6fb; --card: #fff; --ink: #1b2233; --muted: #5d6679; --line: #e2e6ef;
+    --brand: #2f5bea; --brand-d: #2447c0; --soft: #eaf0ff; --warn: #b45309; --warn-bg: #fff4e0;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); }
+  header { padding: 28px 32px 8px; max-width: 1280px; margin: 0 auto; }
+  header h1 { margin: 0 0 4px; font-size: 26px; }
+  header p { margin: 0; color: var(--muted); }
+  .layout { max-width: 1280px; margin: 0 auto; padding: 20px 32px 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+  .col { display: flex; flex-direction: column; gap: 24px; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; padding: 16px; } header { padding: 20px 16px 0; } }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+  section > h2 { margin: 0 0 14px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .tool { padding: 14px 0; border-top: 1px solid var(--line); }
+  .tool:first-of-type { border-top: 0; padding-top: 0; }
+  .tool h3 { margin: 0 0 2px; font-size: 17px; }
+  .tool p { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  a.btn, button.btn { display: inline-block; padding: 8px 14px; border-radius: 8px; font: inherit; font-weight: 600; font-size: 14px; text-decoration: none; cursor: pointer; border: 1px solid var(--brand); }
+  .primary { background: var(--brand); color: #fff; }
+  .primary:hover { background: var(--brand-d); }
+  .secondary { background: #fff; color: var(--brand); }
+  .secondary:hover { background: var(--soft); }
+  .disabled { opacity: .45; pointer-events: none; border-style: dashed; }
+  .note { margin-top: 8px; font-size: 12.5px; color: var(--warn); background: var(--warn-bg); padding: 6px 10px; border-radius: 6px; }
+  /* naming */
+  label { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+  input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; background: #fff; }
+  input:focus, select:focus { outline: 2px solid var(--soft); border-color: var(--brand); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin-top: 12px; }
+  .full { grid-column: 1 / -1; }
+  .pattern { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; background: var(--bg); padding: 8px 10px; border-radius: 8px; color: var(--muted); margin: 8px 0 0; word-break: break-all; }
+  .opt { float: right; font-weight: 500; font-size: 12px; cursor: pointer; }
+  .opt input { width: auto; vertical-align: middle; }
+  input:disabled { background: var(--bg); color: #a0a7b5; }
+  .checks { display: flex; gap: 14px; flex-wrap: wrap; padding: 6px 0; }
+  .checks label { display: flex; align-items: center; gap: 5px; margin: 0; font-size: 14px; color: var(--ink); font-weight: 500; }
+  .checks input { width: auto; }
+  .output { margin-top: 10px; display: flex; gap: 8px; }
+  #results { margin-top: 14px; }
+  #results .output:first-child { margin-top: 0; }
+  .output input { font-family: ui-monospace, Menlo, monospace; background: var(--soft); font-weight: 600; }
+  .hint { font-size: 12.5px; color: var(--muted); margin: 6px 0 0; }
+  .hidden { display: none; }
+  [hidden] { display: none !important; }
+  #gate { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .gate-box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 28px; width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 12px; }
+  .gate-box h1 { margin: 0; font-size: 22px; }
+  .gate-box p { margin: 0; color: var(--muted); }
+  .gate-err { color: #b42318 !important; font-size: 13px; min-height: 18px; }
+  /* policies */
+  .link-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+  .link-row:first-of-type { border-top: 0; padding-top: 0; }
+  .link-row .t { font-weight: 600; }
+  .link-row .d { font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-box">
+    <h1>Contractor Tool Dashboard</h1>
+    <p>Enter the password to continue.</p>
+    <input id="pw" type="password" placeholder="Password" autocomplete="off" autofocus>
+    <button class="btn primary" id="pwGo">Enter</button>
+    <p class="gate-err" id="pwErr"></p>
+  </div>
+</div>
+
+<div id="app" hidden>
+<header>
+  <h1>Contractor Tool Dashboard</h1>
+  <p>Every tool, guide, and naming helper you need in one place.</p>
+</header>
+
+<main class="layout">
+  <div class="col" id="left">
+    <section>
+      <h2>Tools &amp; guides</h2>
+      <div id="tools"></div>
+    </section>
+  </div>
+
+  <div class="col" id="right">
+    <section>
+      <h2>Naming convention generator</h2>
+      <label for="ticket">Asana ticket name (paste to auto-fill)</label>
+      <input id="ticket" placeholder="e.g. Solitaire_Cozy_v2_US_15s_9x16">
+      <p class="hint">We try to read title, concept, version, geo, length, and dimension from the ticket name. Check the fields below and fix anything that is off.</p>
+
+      <div class="grid2">
+        <div class="full">
+          <label for="type">Asset type</label>
+          <select id="type">
+            <option value="video">Video</option>
+            <option value="playable">Playable</option>
+            <option value="static">Static (incl. animated banners &amp; GIFs)</option>
+          </select>
+        </div>
+        <div><label for="title">Title</label><input id="title"></div>
+        <div><label for="concept">Concept</label><input id="concept"></div>
+        <div><label for="version">Version <span class="opt"><input type="checkbox" id="use_version" checked> include</span></label><input id="version" placeholder="v1"></div>
+        <div><label for="geo">Geo</label><input id="geo" placeholder="US"></div>
+
+        <div data-for="video"><label for="length">Length</label><input id="length" placeholder="15s"></div>
+        <div data-for="video static"><label for="dimension">Dimension</label><input id="dimension" placeholder="9x16"></div>
+
+        <div data-for="playable">
+          <label>Playable type (select one or more)</label>
+          <div class="checks" id="ptype">
+            <label><input type="checkbox" value="sip"> sip</label>
+            <label><input type="checkbox" value="mip"> mip</label>
+            <label><input type="checkbox" value="vsip"> vsip</label>
+            <label><input type="checkbox" value="vmip"> vmip</label>
+          </div>
+        </div>
+        <div data-for="playable"><label for="platform">Platform <span class="opt"><input type="checkbox" id="use_platform" checked> include</span></label><input id="platform" placeholder="ios / android"></div>
+
+        <div data-for="playable"><label for="build">Build number <span class="opt"><input type="checkbox" id="use_build" checked> include</span></label><input id="build" placeholder="1"></div>
+      </div>
+
+      <p class="pattern" id="pattern"></p>
+      <div id="results"></div>
+      <p class="hint" id="missing"></p>
+    </section>
+
+    <section>
+      <h2>Policy updates</h2>
+      <div id="policies"></div>
+    </section>
+  </div>
+</main>
+</div>
+
+<script>
+/* ============ EDIT HERE: links ============ */
+const TOOLS = [
+  {
+    name: "VSIP Generator",
+    desc: "Generate VSIP packages.",
+    tool: "https://chondee.github.io/VBP-gen/",
+    guide: "https://docs.google.com/presentation/d/1BnHTDzu6PbkWgCGi7Lk0dPIcnfm0g07UzvEF0Pb2e1o/edit?slide=id.p15#slide=id.p15"
+  },
+  {
+    name: "VMIP Generator",
+    desc: "Generate VMIP packages.",
+    tool: "https://chondee.github.io/VBP-gen/mol-vmipgen_11.html",
+    guide: "https://docs.google.com/document/d/1J4cNjFunQtN55PpTlsu2hbYUIaNmYOmYjOIzvBd0dQ8/edit?tab=t.0"
+  },
+  {
+    name: "Moloco Playable Uploader",
+    desc: "Upload finished playables to Moloco.",
+    tool: "https://chondee.github.io/PlayablePreview/moloco-uploader-v2.html",
+    guide: "https://docs.google.com/presentation/d/1BnHTDzu6PbkWgCGi7Lk0dPIcnfm0g07UzvEF0Pb2e1o/edit?slide=id.p15#slide=id.p15"
+  },
+  {
+    name: "Moloco Playable Batch Uploader",
+    desc: "Upload multiple playables to Moloco in one batch.",
+    tool: "https://chondee.github.io/PlayablePreview/PreviewLinkGenerator/",
+    guide: "https://docs.google.com/presentation/d/1BnHTDzu6PbkWgCGi7Lk0dPIcnfm0g07UzvEF0Pb2e1o/edit?slide=id.p15#slide=id.p15"
+  },
+  {
+    name: "Video Side-by-Side Player",
+    desc: "Play videos side by side and pinpoint exact timestamps for VMIP time markers.",
+    tool: "https://chondee.github.io/contractor/videoplayer.html",
+    guide: ""   // no instructions needed: leave empty and the Instructions button is hidden
+  }
+];
+
+const POLICIES = [
+  {
+    title: "Policy update",
+    desc: "Last updated: Oct 30, 2026",   // update this date whenever the doc changes
+    url: "https://docs.google.com/document/d/1bhqKNE3Euj6aeYPRvCNB8PLAcCa_6D_qt4GgaJcCMWQ/edit?usp=drive_web&ouid=110823163478608561193"
+  }
+  // add more: { title: "...", desc: "...", url: "..." },
+];
+/* ============================================ */
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function btn(label, url, cls) {
+  return url
+    ? `<a class="btn ${cls}" href="${esc(url)}" target="_blank" rel="noopener">${label}</a>`
+    : `<span class="btn ${cls} disabled">${label}</span>`;
+}
+
+document.getElementById("tools").innerHTML = TOOLS.map(t => `
+  <div class="tool">
+    <h3>${esc(t.name)}</h3>
+    <p>${esc(t.desc)}</p>
+    <div class="btns">${btn("Open tool", t.tool, "primary")}${t.guide ? btn("Instructions", t.guide, "secondary") : ""}</div>
+    ${t.note ? `<div class="note">${esc(t.note)}</div>` : ""}
+  </div>`).join("");
+
+document.getElementById("policies").innerHTML = POLICIES.map(p => `
+  <div class="link-row">
+    <div><div class="t">${esc(p.title)}</div><div class="d">${esc(p.desc)}</div></div>
+    ${btn("Read", p.url, "secondary")}
+  </div>`).join("");
+
+/* ---------- Naming generator ---------- */
+const $ = id => document.getElementById(id);
+const PATTERNS = {
+  video:    ["title","concept","version","geo","length","dimension","@@","studio"],
+  playable: ["title","concept","version","geo","ptype","platform","@@","studio","build"],
+  static:   ["title","concept","version","geo","static","dimension","@@","studio"]
+};
+const LABELS = { ptype: "playableType", static: "static", "@@": "@@" };
+
+function clean(v) { return v.trim().replace(/\s+/g, "-"); }
+
+const checkedTypes = () => [...document.querySelectorAll("#ptype input:checked")].map(c => c.value);
+
+function build() {
+  const type = $("type").value;
+  const missing = [];
+  // playable can have several types selected -> one name per type
+  const variants = type === "playable" ? (checkedTypes().length ? checkedTypes() : [null]) : [null];
+  if (type === "playable" && !checkedTypes().length) missing.push("playable type");
+  // version / platform / build can be switched off with their "include" checkbox
+  const on = k => !$("use_" + k) || $("use_" + k).checked;
+  ["version", "platform", "build"].forEach(k => $(k).disabled = !on(k));
+  const fields = PATTERNS[type].filter(on);
+  const names = variants.map(variant => fields.map(k => {
+    if (k === "@@" || k === "static" || k === "studio") return k;   // fixed text, not editable
+    if (k === "ptype") return variant || "[ptype]";
+    const val = clean($(k).value);
+    if (!val && variant === variants[0]) missing.push(k);
+    return val || `[${k}]`;
+  }).join("_"));
+  document.querySelectorAll("[data-for]").forEach(el =>
+    el.classList.toggle("hidden", !el.dataset.for.split(" ").includes(type)));
+  $("pattern").textContent = fields.map(k => LABELS[k] || k).join("_");
+  $("results").innerHTML = names.map(n => `
+    <div class="output">
+      <input readonly aria-label="Generated name" value="${esc(n)}">
+      <button class="btn primary copy">Copy</button>
+    </div>`).join("");
+  $("missing").textContent = missing.length ? "Still needed: " + missing.join(", ") : "";
+}
+
+function parseTicket(text) {
+  const tokens = text.split(/[_\-\s|,]+/).filter(Boolean);
+  const rest = [];
+  tokens.forEach(t => {
+    if (/^\d+s$/i.test(t)) { $("length").value = t.toLowerCase(); $("type").value = "video"; }
+    else if (/^\d+x\d+$/i.test(t)) $("dimension").value = t.toLowerCase();
+    else if (/^v\d+/i.test(t)) $("version").value = t.toLowerCase();
+    else if (/^(sip|mip|vsip|vmip)$/i.test(t)) {
+      const box = document.querySelector(`#ptype input[value="${t.toLowerCase()}"]`);
+      if (box) box.checked = true;
+      $("type").value = "playable";
+    }
+    else if (/^(ios|android)$/i.test(t)) $("platform").value = t.toLowerCase();
+    else if (/^playable$/i.test(t)) $("type").value = "playable";
+    else if (/^video$/i.test(t)) $("type").value = "video";
+    else if (/^(static|gif|banner)$/i.test(t)) $("type").value = "static";
+    else if (/^[A-Z]{2,3}$/.test(t)) $("geo").value = t;
+    else rest.push(t);
+  });
+  if (rest[0]) $("title").value = rest[0];
+  if (rest[1]) $("concept").value = rest.slice(1).join("-");
+  build();
+}
+
+$("ticket").addEventListener("input", e => parseTicket(e.target.value));
+document.querySelectorAll("input, select").forEach(el => el.addEventListener("input", build));
+$("results").addEventListener("click", async e => {
+  const b = e.target.closest(".copy");
+  if (!b) return;
+  const field = b.previousElementSibling;
+  try { await navigator.clipboard.writeText(field.value); }
+  catch { field.select(); document.execCommand("copy"); }   // fallback where clipboard API is blocked
+  b.textContent = "Copied!";
+  setTimeout(() => b.textContent = "Copy", 1200);
+});
+build();
+
+/* ---------- Password gate ----------
+   Client-side only: it keeps casual visitors out, but it is not real security.
+   Only a salted SHA-256 hash is stored here, never the password itself. */
+const PW_HASH = "9fd661f91ce1cfc35d025f91c8f89ff48eebbb6739c507dd242b2c7660055676";
+const PW_SALT = "cdash:";
+
+// SHA-256 (pure JS so it works in sandboxed pages without crypto.subtle)
+function sha256(ascii) {
+  const rotr = (v, a) => (v >>> a) | (v << (32 - a));
+  const maxWord = Math.pow(2, 32);
+  let result = "", words = [];
+  const bitLen = ascii.length * 8;
+  let hash = [], k = [], primeCounter = 0;
+  const isComposite = {};
+  for (let c = 2; primeCounter < 64; c++) {
+    if (!isComposite[c]) {
+      for (let i = 0; i < 313; i += c) isComposite[i] = c;
+      hash[primeCounter] = (Math.pow(c, 0.5) * maxWord) | 0;
+      k[primeCounter++] = (Math.pow(c, 1 / 3) * maxWord) | 0;
+    }
+  }
+  ascii += "\x80";
+  while (ascii.length % 64 - 56) ascii += "\x00";
+  for (let i = 0; i < ascii.length; i++) words[i >> 2] |= ascii.charCodeAt(i) << ((3 - i) % 4) * 8;
+  words[words.length] = (bitLen / maxWord) | 0;
+  words[words.length] = bitLen;
+  for (let j = 0; j < words.length;) {
+    const w = words.slice(j, j += 16), old = hash;
+    hash = hash.slice(0, 8);
+    for (let i = 0; i < 64; i++) {
+      const w15 = w[i - 15], w2 = w[i - 2], a = hash[0], e = hash[4];
+      const t1 = hash[7] + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & hash[5]) ^ (~e & hash[6])) + k[i] +
+        (w[i] = i < 16 ? w[i] : (w[i - 16] + (rotr(w15, 7) ^ rotr(w15, 18) ^ (w15 >>> 3)) + w[i - 7] + (rotr(w2, 17) ^ rotr(w2, 19) ^ (w2 >>> 10))) | 0);
+      const t2 = (rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+      hash = [(t1 + t2) | 0].concat(hash);
+      hash[4] = (hash[4] + t1) | 0;
+    }
+    for (let i = 0; i < 8; i++) hash[i] = (hash[i] + old[i]) | 0;
+  }
+  for (let i = 0; i < 8; i++) for (let j = 3; j + 1; j--) {
+    const b = (hash[i] >> (j * 8)) & 255;
+    result += (b < 16 ? "0" : "") + b.toString(16);
+  }
+  return result;
+}
+
+// Remember a successful login for 30 days (per browser). Storage is wrapped in
+// try/catch because sandboxed hosts (e.g. Slingshot) block it; there the password
+// is simply asked again on each visit.
+const REMEMBER_KEY = "cdash_unlock", REMEMBER_MS = 30 * 24 * 60 * 60 * 1000;
+function rememberedLogin() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(REMEMBER_KEY) || "null");
+    return !!saved && saved.h === PW_HASH && Date.now() < saved.until;
+  } catch (e) { return false; }
+}
+function rememberLogin() {
+  try { localStorage.setItem(REMEMBER_KEY, JSON.stringify({ h: PW_HASH, until: Date.now() + REMEMBER_MS })); } catch (e) {}
+}
+function unlock() { $("gate").hidden = true; $("app").hidden = false; }
+
+function tryUnlock() {
+  const attempt = sha256(unescape(encodeURIComponent(PW_SALT + $("pw").value)));
+  if (attempt === PW_HASH) {
+    rememberLogin();
+    unlock();
+  } else {
+    $("pwErr").textContent = "Incorrect password.";
+    $("pw").select();
+  }
+}
+$("pwGo").addEventListener("click", tryUnlock);
+$("pw").addEventListener("keydown", e => { if (e.key === "Enter") tryUnlock(); });
+if (rememberedLogin()) unlock();
+</script>
+</body>
+</html>
